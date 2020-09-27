@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+    <!--配置不需要进行验证的资源 不被拦截-->
+    <http pattern="/favicon.ico" security="none"></http>
+    <http pattern="/shoplogin.html" security="none"></http>
+    <http pattern="/login_error.html" security="none"></http>
+    <http pattern="/admin/**" security="none"></http>
+    <http pattern="/css/**" security="none"></http>
+    <http pattern="/img/**" security="none"></http>
+    <http pattern="/js/**" security="none"></http>
+    <http pattern="/plugins/**" security="none"></http>
+    <http pattern="/seller/add.do" security="none"></http>
+    <http pattern="/register.html" security="none"></http>
+
+    <!--配置拦截的规则-->
+    <http use-expressions="false">
+        <!--配置什么样的资源需要配置符合要求才可以访问
+        /*代表当前目录中的资源需要验证
+        /** 代表访问当前目录及子目录、孙子目录等都需要验证
+        access代表可以进入的角色-->
+        <intercept-url pattern="/**" access="ROLE_SELLER"></intercept-url>
+        <!--当阿验证不通过的时候去登录页面
+        default-target-url 登录成功后总是访问默认访问的页面-->
+        <form-login login-page="/shoplogin.html" default-target-url="/admin/index.html"
+
+                    always-use-default-target="true"/>
+        <!--关闭跨站攻击-->
+        <csrf disabled="true"/>
+        <headers>
+            <frame-options policy="SAMEORIGIN"/>
+        </headers>
+        <logout logout-url="" logout-success-url="/shoplogin.html"/>
+    </http>
+
+<!--    <authentication-manager>
+        <authentication-provider>
+            <user-service>
+                <user name="admin" password="123456" authorities="ROLE_SELLER"/>
+            </user-service>
+        </authentication-provider>
+    </authentication-manager>-->
+
+<!--     认证管理器 -->
+    <authentication-manager alias="authenticationManager">
+        <authentication-provider user-service-ref='userDetailService'>
+            <password-encoder ref="bcryptEncoder"></password-encoder>
+        </authentication-provider>
+    </authentication-manager>
+    <!-- 定义自定义认证类 -->
+    <beans:bean id="userDetailService" class="com.offcn.service.UserDetailsServiceImpl">
+        <beans:property name="sellerService" ref="sellerService"/>
+    </beans:bean>
+    <beans:bean id="bcryptEncoder"
+                class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+
+
+    <!-- 引用dubbo 服务 -->
+    <dubbo:application name="dongyimai_shop_web"/>
+    <dubbo:registry address="zookeeper://192.168.188.128:2181"/>
+    <dubbo:reference id="sellerService" interface="com.offcn.sellergoods.service.SellerService"/>
+
+</beans:beans>
+
+
